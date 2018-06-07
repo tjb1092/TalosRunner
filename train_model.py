@@ -4,28 +4,15 @@ from alexnet import alexnet
 WIDTH = 100
 HEIGHT = 100
 LR = 1e-3
-EPOCHS = 20
-MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_body',EPOCHS)
+EPOCHS = 10
+MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_body_22kSamples',EPOCHS)
 
-model = alexnet(WIDTH,HEIGHT,LR)
-"""
-train_data = np.load('training_data_body_v2.npy')
-train = train_data[:-20]
-test = train_data[-20:]
+model = alexnet(WIDTH,HEIGHT,LR, MODEL_NAME)
 
-X = np.array([i[0] for i in train]).reshape(-1,WIDTH,HEIGHT,1)
-Y = np.array([i[1] for i in train])
-
-testX = np.array([i[0] for i in test]).reshape(-1,WIDTH,HEIGHT,1)
-testY = np.array([i[1] for i in test])
-
-model.fit({'input': X}, {'targets', Y}, n_epoch=EPOCS, validation_set=({'input': testX}, {'targets': testY}), snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
-"""
-
-train_data = np.load('training_data_body_v2.npy')
-
-train = train_data[:-20]
-test = train_data[-20:]
+train_data = np.load('preprocessedTrainingData/body/training_data_body.npy')
+#Automate this to 10% of data bruh
+train = train_data[:-2000]
+test = train_data[-2000:]
 
 X = np.array([i[0] for i in train]).reshape(-1,WIDTH,HEIGHT,1)
 Y = np.array([i[1] for i in train])

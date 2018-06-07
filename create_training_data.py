@@ -7,6 +7,7 @@ from Xlib import display, X
 import pyxhook
 import math
 from utils import countDown
+import pickle
 
 
 def keys_to_output(keys):
@@ -41,17 +42,37 @@ def mmove_to_output(root, prevX, prevY):
 
     return output, mouse_x, mouse_y
 
+# More complicated data saving methods
+def open_npy_file(dataIndex, Dtype):
 
-
-def openNPFile(file_name):
-
-    if os.path.isfile(file_name):
-        print('File Exists, loading previous data!')
-        training_data = list(np.load(file_name))
+    if dataIndex == 0:
+        training_data=[]
     else:
-        print('File does not exist, starting fresh!')
-        training_data = []
+        training_data = list(np.load("collectedData/" + Dtype +"/training_data_" + Dtype +  "_" + str(dataIndex)+".npy")) # load latest file.
+
     return training_data
+
+def save_npy_file(Dtype, dataIndex, training_data, pickle_fname, pWrite):
+    # Assume the dataIndex corresponds with the current data file.
+    if pWrite == 0:
+        dataIndex += 1
+
+    #Write to new datafile
+    np.save("collectedData/"+Dtype+"/training_data_"+Dtype+"_"+str(dataIndex), training_data)
+    if pWrite == 1:
+        #update the stored index. Only for head right now.
+        pickle.dump(dataIndex, open(pickle_fname, "wb"))
+
+    return dataIndex
+
+def open_dataIndex(pickle_fname):
+    if os.path.isfile(pickle_fname):
+        dataIndex = pickle.load(open(pickle_fname,"rb"))
+    else:
+        dataIndex = 0
+    return dataIndex
+
+
 
 #this function is called everytime a key is pressed.
 def OnKeyPress(event):
@@ -68,10 +89,10 @@ def getMousePos(root):
 
 def main():
     global keysPressed
-    body_fname = 'training_data_body.npy'
-    head_fname = 'training_data_head.npy'
-    training_data_body = openNPFile(body_fname)
-    training_data_head = openNPFile(head_fname)
+    pickle_fname = "collectedData/dataIndex.p"
+    dataIndex = open_dataIndex(pickle_fname)
+    training_data_body = open_npy_file(dataIndex, "body")
+    training_data_head = open_npy_file(dataIndex, "head")
 
     countDown(5)
 
@@ -108,10 +129,13 @@ def main():
             cv2.destroyAllWindows()
             break
 
-        if len(training_data_body) % 500 == 0:
+        if len(training_data_body) % 1000 == 0:
             print(len(training_data_body))
-            np.save(body_fname, training_data_body)
-            np.save(head_fname, training_data_head)
+            dataIndex = save_npy_file("body", dataIndex, training_data_body, pickle_fname, 0)
+            dataIndex = save_npy_file("head", dataIndex, training_data_head, pickle_fname, 1)
+            # Restarts array for next batch
+            training_data_body = []
+            training_data_head = []
 
 
 keysPressed = []

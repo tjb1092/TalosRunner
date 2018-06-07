@@ -12,7 +12,7 @@ from utils import countDown
 WIDTH = 100
 HEIGHT = 100
 LR = 1e-3
-EPOCHS = 20
+EPOCHS = 10
 MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_body',EPOCHS)
 
 
@@ -54,7 +54,6 @@ def main():
     W,H = 575,525
     dsp = display.Display()
     root = dsp.screen().root
-#    prevX, prevY = getMousePos(root)
 
     while True:
 
