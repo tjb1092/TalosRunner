@@ -25,7 +25,6 @@ def open_concat_Data(Datafolder, Dtype):
 def balanceData(Datafolder, Dtype):
 
     training_data = open_concat_Data(Datafolder, Dtype)
-    #training_data = np.load(os.path.join('.','collectedData',fname))
 
     df = pd.DataFrame(training_data)
 

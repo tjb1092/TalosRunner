@@ -7,14 +7,20 @@ from screenGrab import grabscreen
 import os
 from Xlib import display, X
 from utils import countDown
+import uinput
 
+W = 575
+H = 525
+dy = 1 # pixels
+dx = 1 # pixels
 
 WIDTH = 100
 HEIGHT = 100
 LR = 1e-3
 EPOCHS = 10
-MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_body',EPOCHS)
-
+Dtype = 'body'
+MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_{}_22kSamples'.format(Dtype),EPOCHS)
+print(MODEL_NAME)
 
 def forwards():
     SendKeyPress('w')
@@ -41,19 +47,49 @@ def right():
     SendKeyRelease('w')
 
 
+#Terrible I know, but whatever
+def getMousePos(root):
+    mouse_x = root.query_pointer()._data["root_x"]
+    mouse_y = root.query_pointer()._data["root_y"]
+    return mouse_x, mouse_y
 
-model = alexnet(WIDTH,HEIGHT,LR)
+#These can probably just be regular function calls in the main loop now. Maybe.
+#It does look more intuitive with the names attached
+def lookUp(d):
+    d.emit(uinput.REL_Y,-1*dy)
+
+def lookDown(d):
+    d.emit(uinput.REL_Y,dy)
+
+def lookLeft(d):
+    d.emit(uinput.REL_X,-1*dx)
+
+def lookRight(d):
+    d.emit(uinput.REL_X,dx)
+
+
+model = alexnet(WIDTH,HEIGHT,LR, MODEL_NAME)
 model.load(MODEL_NAME)
+
 
 def main():
 
     countDown(5)
-
     # Setup for screenGrab
     last_time = time.time()
     W,H = 575,525
     dsp = display.Display()
+    screen = dsp.screen()
     root = dsp.screen().root
+
+    # This was such an obscure way to to this. X11 doesn't force the mouse in the game window
+    # This device object does work, so that's nice that it works
+    device = uinput.Device([
+        uinput.BTN_LEFT,
+        uinput.BTN_RIGHT,
+        uinput.REL_X,
+        uinput.REL_Y,
+        ])
 
     while True:
 
@@ -63,13 +99,25 @@ def main():
         print(moves)
 
         if moves == [1,0,0,0]:
-            left()
+            if Dtype == 'body':
+                left()
+            elif Dtype == 'head':
+                lookUp(device)
         elif moves == [0,1,0,0]:
-            right()
+            if Dtype == 'body':
+                right()
+            elif Dtype == 'head':
+                lookDown(device)
         elif moves == [0,0,1,0]:
-            forwards()
+            if Dtype == 'body':
+                forwards()
+            elif Dtype == 'head':
+                lookLeft(device)
         elif moves == [0,0,0,1]:
-            backwards()
+            if Dtype == 'body':
+                backwards()
+            elif Dtype == 'head':
+                lookRight(device)
 
         print('loop took {} seconds'.format(time.time()-last_time))
         last_time = time.time()

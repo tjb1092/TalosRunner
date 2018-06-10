@@ -3,13 +3,13 @@ from alexnet import alexnet
 
 WIDTH = 100
 HEIGHT = 100
-LR = 1e-3
-EPOCHS = 10
-MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_body_22kSamples',EPOCHS)
+LR = 1e-4
+EPOCHS = 50
+MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_head_22kSamples',EPOCHS)
 
 model = alexnet(WIDTH,HEIGHT,LR, MODEL_NAME)
 
-train_data = np.load('preprocessedTrainingData/body/training_data_body.npy')
+train_data = np.load('preprocessedTrainingData/head/training_data_head.npy')
 #Automate this to 10% of data bruh
 train = train_data[:-2000]
 test = train_data[-2000:]
