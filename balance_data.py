@@ -35,23 +35,33 @@ def balanceData(Datafolder, Dtype):
     d2 = []
     d3 = []
     d4 = []
-
+    d5 = []
     for data in training_data:
         img = data[0]
         choice = data[1]
 
-        if choice == [1,0,0,0]:
+        if choice == [1,0,0,0,0]:
             d1.append([img, choice])
-        elif choice == [0,1,0,0]:
+        elif choice == [0,1,0,0,0]:
             d2.append([img, choice])
-        elif choice == [0,0,1,0]:
+        elif choice == [0,0,1,0,0]:
             d3.append([img, choice])
-        elif choice == [0,0,0,1]:
+        elif choice == [0,0,0,1,0]:
             d4.append([img, choice])
+        elif choice == [0,0,0,0,1]:
+            d5.append([img, choice])
+
     if Dtype == 'body':
-        indexLen = np.sort(np.array([len(d1), len(d2), len(d3), len(d4)]))[1] # Pick longest len
+        indexLen = np.sort(np.array([len(d1), len(d2), len(d3), len(d4), len(d5)]))[1] # Pick longest len
     else:
-        indexLen = np.sort(np.array([len(d1), len(d2), len(d3), len(d4)]))[0] # Pick longest len
+        indexLen = np.sort(np.array([len(d1), len(d2), len(d3), len(d4), len(d5)]))[0] # Pick longest len
+
+    #This ensures that all parts of the data have an opportunity to get into the training set
+    shuffle(d1)
+    shuffle(d2)
+    shuffle(d3)
+    shuffle(d4)
+    shuffle(d5)
 
     d1 = d1[:indexLen]
 
@@ -59,8 +69,8 @@ def balanceData(Datafolder, Dtype):
     d3 = d3[:indexLen]
     if Dtype != 'body':
         d4 = d4[:indexLen]
-
-    final_data = d1 + d2 + d3 + d4
+    d5 = d5[:indexLen]
+    final_data = d1 + d2 + d3 + d4 + d5
     shuffle(final_data)
     print("Number of Training Samples: {}".format(len(final_data)))
     np.save(os.path.join('.','preprocessedTrainingData',Dtype,"training_data_"+Dtype), final_data)

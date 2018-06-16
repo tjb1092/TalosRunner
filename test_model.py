@@ -16,10 +16,10 @@ dx = 1 # pixels
 
 WIDTH = 100
 HEIGHT = 100
-LR = 1e-3
-EPOCHS = 10
+LR = 1e-4
+EPOCHS = 100
 Dtype = 'body'
-MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_{}_22kSamples'.format(Dtype),EPOCHS)
+MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_{}_6kSamples'.format(Dtype),EPOCHS)
 print(MODEL_NAME)
 
 def forwards():
@@ -46,6 +46,11 @@ def right():
     SendKeyRelease('a')
     SendKeyRelease('w')
 
+def stop():
+    SendKeyRelease('d')
+    SendKeyRelease('s')
+    SendKeyRelease('a')
+    SendKeyRelease('w')
 
 #Terrible I know, but whatever
 def getMousePos(root):
@@ -98,26 +103,29 @@ def main():
         moves = list(np.around(model.predict([image.reshape(100,100,1)])[0]))
         print(moves)
 
-        if moves == [1,0,0,0]:
+        if moves == [1,0,0,0,0]:
             if Dtype == 'body':
                 left()
             elif Dtype == 'head':
                 lookUp(device)
-        elif moves == [0,1,0,0]:
+        elif moves == [0,1,0,0,0]:
             if Dtype == 'body':
                 right()
             elif Dtype == 'head':
                 lookDown(device)
-        elif moves == [0,0,1,0]:
+        elif moves == [0,0,1,0,0]:
             if Dtype == 'body':
                 forwards()
             elif Dtype == 'head':
                 lookLeft(device)
-        elif moves == [0,0,0,1]:
+        elif moves == [0,0,0,1,0]:
             if Dtype == 'body':
                 backwards()
             elif Dtype == 'head':
                 lookRight(device)
+        elif moves == [0,0,0,0,1]:
+            stop()
+            #time.sleep(0.5) #Take a break
 
         print('loop took {} seconds'.format(time.time()-last_time))
         last_time = time.time()

@@ -11,8 +11,8 @@ import pickle
 
 
 def keys_to_output(keys):
-    output = [0,0,0,0]
-    #output = [0,0,0,0, 0] # a, d, w, s, nothing
+    #output = [0,0,0,0]
+    output = [0,0,0,0, 0] # a, d, w, s, nothing
 
     if 'a' in keys:
         output[0] = 1
@@ -22,14 +22,14 @@ def keys_to_output(keys):
         output[2] = 1
     elif 's' in keys:
         output[3] = 1
-    #elif len(keys) == 0:
-    #    output[4] = 1
+    elif len(keys) == 0:
+        output[4] = 1
 
     return output
 
 def mmove_to_output(root, prevX, prevY):
-    output = [0,0,0,0]
-    #output = [0,0,0,0,0] #up, down, left, right, nothing
+    #output = [0,0,0,0]
+    output = [0,0,0,0,0] #up, down, left, right, nothing
     thresh = 5
     mouse_x, mouse_y = getMousePos(root)
     dx = prevX - mouse_x
@@ -43,8 +43,8 @@ def mmove_to_output(root, prevX, prevY):
         output[2] = 1
     elif (-1.*dx) > thresh: #right
         output[3] = 1
-    #else:
-    #    output[4] = 1
+    else:
+        output[4] = 1
 
     return output, mouse_x, mouse_y
 
