@@ -26,4 +26,4 @@ model.fit({'input': X}, {'targets': Y}, n_epoch=EPOCHS, validation_set=({'input'
     snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
 
 # tensorboard --logdir=~/store/Code/TalosRunner/log
-model.save(MODEL_NAME)
+model.save("models/{}/{}".format(Dtype,MODEL_NAME)) #change this argument to make it store in a file path
