@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 from random import shuffle
-import cv2
 import os
 
 def open_concat_Data(Datafolder, Dtype):

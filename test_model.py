@@ -2,26 +2,37 @@ import numpy as np
 import cv2
 import time
 from directInputs import SendKeyPress, SendKeyRelease
-from alexnet import alexnet
+#from alexnet import alexnet, alexnet_color
 from screenGrab import grabscreen
 import os
 from Xlib import display, X
 from utils import countDown
 import uinput
 
+
+from keras.models import load_model
 W = 575
 H = 525
-dy = 1 # pixels
-dx = 1 # pixels
+dy = 5 # pixels
+dx = 5 # pixels
 
-WIDTH = 100
-HEIGHT = 100
+#need to add a timestamp to see how long it takes!
+WIDTH = 200
+HEIGHT = 200
 LR = 1e-4
-EPOCHS = 100
-Dtype = 'body'
-model_path = 'models/{}/'.format(Dtype)
-MODEL_NAME = 'pytalos-{}-{}-{}-epocs.model'.format(LR,'alexnet_{}_6kSamples'.format(Dtype),EPOCHS)
-print(MODEL_NAME)
+EPOCHS_1 = 40
+EPOCHS_2 = 100
+DTYPE = 'body'
+OPTIMIZER = 'momentum'
+DATA_TYPE = 'rgb_200'
+ARCH = "VGG16"
+FILENUM = 232 # Get this automatically in the future
+
+MODEL_NAME = 'pytalos_{}_{}_{}_{}_files_{}_epocs_{}_{}.h5'.format(DTYPE, ARCH, OPTIMIZER, FILENUM, EPOCHS_1, DATA_TYPE,LR)
+model_path = "models/{}/{}".format(DTYPE,MODEL_NAME)
+
+print(model_path)
+model = load_model(model_path)
 
 def forwards():
     SendKeyPress('w')
@@ -88,9 +99,6 @@ def look(d, direction):
         d.emit(uinput.REL_X,dx)     # Right
     # 5 will make nothing happen.
 
-model = alexnet(WIDTH,HEIGHT,LR, MODEL_NAME)
-model.load(model_path + MODEL_NAME)
-
 
 def main():
 
@@ -112,48 +120,53 @@ def main():
         ])
 
     choice = 5 #start not moving head
-    
+
     while True:
 
         image = grabscreen(root, W,H)
-        image = cv2.resize(image,(100,100))
-        moves = list(np.around(model.predict([image.reshape(100,100,1)])[0]))
+        # These need to be put into a conditional for the different types?
+        image = cv2.resize(image,(WIDTH,HEIGHT))
+        #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        prediction = model.predict([image.reshape(1,WIDTH,HEIGHT,3)])[0]
+
+        print(prediction)
+        moves = list(np.around(prediction))
         print(moves)
 
         if moves == [1,0,0,0,0]:
-            if Dtype == 'body':
+            if DTYPE == 'body':
                 left()
-            elif Dtype == 'head':
+            elif DTYPE == 'head':
                 choice = 1
                 #lookUp(device)
         elif moves == [0,1,0,0,0]:
-            if Dtype == 'body':
+            if DTYPE == 'body':
                 right()
-            elif Dtype == 'head':
+            elif DTYPE == 'head':
                 choice = 2
                 #lookDown(device)
         elif moves == [0,0,1,0,0]:
-            if Dtype == 'body':
+            if DTYPE == 'body':
                 forwards()
-            elif Dtype == 'head':
+            elif DTYPE == 'head':
                 choice = 3
                 #lookLeft(device)
         elif moves == [0,0,0,1,0]:
-            if Dtype == 'body':
+            if DTYPE == 'body':
                 backwards()
-            elif Dtype == 'head':
+            elif DTYPE == 'head':
                 choice = 4
                 #lookRight(device)
         elif moves == [0,0,0,0,1]:
-            if Dtype == 'body':
+            if DTYPE == 'body':
                 stop()
                 #time.sleep(0.5) #Take a break
-            elif Dtype == 'head':
+            elif DTYPE == 'head':
                 choice = 5
 
-        if Dtype == 'head':
+        if DTYPE == 'head':
             look(device, choice)
-        print('loop took {} seconds'.format(time.time()-last_time))
+        print('loop took {:0.3f} seconds'.format(time.time()-last_time))
         last_time = time.time()
         keysPressed = [] # refresh it each time we loop to keep out past inputs
 

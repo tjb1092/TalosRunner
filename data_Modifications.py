@@ -39,10 +39,11 @@ training data
 
 def view_data():
     dataIndex = pickle.load(open("collectedData/dataIndex.p","rb"))
-    selectedFile = input("Pick a DF number from 1 to {}: ".format(dataIndex))
+    selectedFile = input("Pick a DF number from 1 to 231: ")
     data_type = input("body or head?\n")
+    #d = input("which d?")
 
-    fname = "collectedData/{}/training_data_{}_{}.npy".format(data_type,data_type,selectedFile)
+    fname = "trainingData/gray_100/{}/data_{}.npy".format(data_type, selectedFile)
     viewData(fname)
 
 

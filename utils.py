@@ -18,10 +18,11 @@ def viewData(fname):
         #image = cv2.resize(image,(1000,1000)) #That hurt my eyes lol
         cv2.imshow('test', image)
         print(data[1])
+
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break
-
+        input("pause")
 def setPickleIndex(pickle_fname,val):
     #update the stored index. Only for head right now.
     pickle.dump(val, open(pickle_fname, "wb"))
