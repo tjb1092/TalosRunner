@@ -4,6 +4,7 @@ import pandas as pd
 from collections import Counter
 from random import shuffle, sample
 import time
+import pickle
 
 #This will balance a distributed dataset that is too big to load into RAM
 # This is for Conv nets only and won't be useful for recurrent nets.
@@ -43,10 +44,7 @@ def prepare_Data(Datafolder, Dtype):
                 # Load last data file. If not at max, fill it up before moving on.
                 for i in range(5):
                     counts[i] += len(Data[i]) # Tally up the counts for later analysis
-                    print("counts")
-                    print(counts)
-                    print("Indicies")
-                    print(Indicies)
+
                     #Ensure each file adds up to 100 samples over 5 sample types.
                     if Dtype == 'body':
                         if i+1 == 4:
@@ -81,29 +79,32 @@ def prepare_Data(Datafolder, Dtype):
                     if len(data_file) != 0:
                         # One more save for last, non-uniform sample
                         np.save("sortedData/{}/d{}/data_{}.npy".format(Dtype, str(i+1), str(Indicies[i])), data_file)
-
+                print("Counts")
+                print(counts)
+                print("Indicies")
+                print(Indicies)
     #Works pretty well, but there's something weird going on where I'm making too many files.
-    #d4_6 shows this. It has the right shape, but I'm fairly confident there isn't enough data there.
-
     #It is about 5Gb bigger than the original folder, so there is definitely some overlap somehow.
     print('process took {:0.3f} min'.format((time.time()-last_time)/60.))
     last_time = time.time()
 
     #Okay now we should have each file struct managed properly
     #Create the balanced training data set
-    createTrainingData(Indicies, Dtype)
+    createBalancedTrainingData(Indicies, Dtype)
     print('process took {:0.3f} min'.format((time.time()-last_time)/60.))
     last_time = time.time()
     # Delete all data after to save space. It doesn't seem like I need it afterwards. I don't think this is super damaging to the hard drive.
-    removeIntermediateData(Dtype)
+    removeData("sortedData", Dtype)
+    #removeData("collectedData", Dtype)
 
 
 #making it its own function so I can test it out without making the data each time lol.
-def createTrainingData(Indicies, Dtype):
+def createBalancedTrainingData(Indicies, Dtype):
     #Iterate through each motion for each file and construct the data
     # Smallest defines how many files we can have
     training_file_len = min(Indicies)
     trainingFileIndex = []
+    dataIndex = pickle.load(open("trainingData/rgb_299/dataIndex_{}.p".format(Dtype), "rb")) # Get current trainingData data file number
 
     for i in range(len(Indicies)):
         choices = sample(range(Indicies[i]), training_file_len) # pull N random samples from the avaliable files
@@ -117,14 +118,22 @@ def createTrainingData(Indicies, Dtype):
             data_file = data_file + d
         print(len(data_file))
         shuffle(data_file)
-        np.save("trainingData/rgb_299/{}/data_{}.npy".format(Dtype,str(i+1)), data_file)
+        dataIndex += 1
+        np.save("trainingData/rgb_299/{}/data_{}.npy".format(Dtype,str(dataIndex)), data_file)
 
+    pickle.dump(dataIndex,open("trainingData/rgb_299/dataIndex_{}.p".format(Dtype), "wb")) # Save final number
 
-def removeIntermediateData(Dtype):
-    for i in range(1,6):
-        for root, dirs, files in os.walk("sortedData/{}/d{}".format(Dtype,str(i))):
+def removeData(FolderName, Dtype):
+
+    if FolderName == "sortedData":
+        for i in range(1,6):
+            for root, dirs, files in os.walk("{}/{}/d{}".format(FolderName,Dtype,str(i))):
+                for filename in files:
+                    os.remove("{}/{}/d{}/{}".format(FolderName, Dtype, str(i), filename))
+    elif FolderName == "collectedData":
+        for root, dirs, files in os.walk("{}/{}".format(FolderName, Dtype)):
             for filename in files:
-                os.remove("sortedData/{}/d{}/{}".format(Dtype, str(i), filename))
+                os.remove("{}/{}/{}".format(FolderName, Dtype, filename))
 
 
 def sort_Data_Labels(data):
@@ -156,6 +165,26 @@ def sort_Data_Labels(data):
 
     return d1, d2, d3, d4, d5
 
+def createUnbalancedTrainingData(Dtype):
+    # Iterate through each motion for each file and construct the data
+    # Smallest defines how many files we can have
+    dataIndex = pickle.load(open("collectedData/dataIndex.p", "rb")) # Get current trainingData data file number
+    counter = 0
+    for i in range(dataIndex):
+        data = list(np.load("collectedData/{}/training_data_{}_{}.npy".format(Dtype, Dtype, str(i+1)))) # load a data file.
+        shuffle(data)
 
-prepare_Data('collectedData', 'body')
-prepare_Data('collectedData', 'head')
+        # Cuts into 5 parts of 100 samples
+        for i in range(5):
+            tmp = data[i*100:((i+1)*100)]
+            print(len(tmp))
+            counter += 1
+            np.save("trainingData/Unbalanced_rgb_299/{}/data_{}.npy".format(Dtype,str(counter)), tmp)
+
+    pickle.dump(counter,open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(Dtype), "wb")) # Save final number
+
+
+# Maybe these could be in a main function that allows me to choose? Is it worth it?
+#prepare_Data('collectedData', 'body')
+#prepare_Data('collectedData', 'head')
+#createUnbalancedTrainingData('body')

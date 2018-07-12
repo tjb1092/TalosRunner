@@ -14,6 +14,4 @@ def process_img(image):
 def grabscreen(root,W,H):
     raw = root.get_image(0,0, W, H, X.ZPixmap, 0xffffffff)
     image = np.array(Image.frombytes("RGB", (W,H), raw.data, "raw", "RGBX"))
-    #image = process_img(image)
-    #cv2.imshow('window',image)
     return image

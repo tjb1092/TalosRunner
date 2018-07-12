@@ -28,34 +28,37 @@ def create_data_sets(Dtype):
             print(fname)
             training_data = np.load(os.path.join(training_fp,fname))
             gray_299 = []
+            rgb_224 = []
+            bgr_224 = []
             rgb_200 = []
             gray_200 = []
-            rgb_100 = []
-            gray_100 = []
+
 
             for data in training_data:
 
                 image = data[0]
                 label = data[1]
-                gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
                 gray_299.append([gray_image, label])
 
-                image = cv2.resize(image,(200,200))
-                rgb_200.append([image, label])
-                gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                image224 = cv2.resize(image,(224,224))
+                bgr_image224 = cv2.cvtColor(image224, cv2.COLOR_RGB2BGR)
+                rgb_224.append([image224, label])
+                bgr_224.append([bgr_image224, label])
+
+
+                image200 = cv2.resize(image,(200,200))
+                rgb_200.append([image200, label])
+                gray_image = cv2.cvtColor(image200, cv2.COLOR_RGB2GRAY)
                 gray_200.append([gray_image, label])
 
-                image = cv2.resize(image,(100,100))
-                rgb_100.append([image, label])
-                gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                gray_100.append([gray_image, label])
 
             # This could also be a dict of some sort, but lists work.
-            dataLst = [gray_299, rgb_200, gray_200, rgb_100, gray_100]
-            folder_names =["gray_299", "rgb_200", "gray_200", "rgb_100", "gray_100"]
+            dataLst = [gray_299, rgb_224, bgr_224, rgb_200, gray_200]
+            folder_names =["gray_299", "rgb_224", "bgr_224", "rgb_200", "gray_200"]
 
             for i in range(len(folder_names)):
                 np.save("trainingData/{}/{}/{}".format(folder_names[i], Dtype, fname), dataLst[i])
 
-create_data_sets('body')
+#create_data_sets('body')
 create_data_sets('head')

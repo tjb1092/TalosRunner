@@ -2,37 +2,40 @@ import numpy as np
 import cv2
 import time
 from directInputs import SendKeyPress, SendKeyRelease
-#from alexnet import alexnet, alexnet_color
 from screenGrab import grabscreen
 import os
 from Xlib import display, X
 from utils import countDown
 import uinput
-
-
+import pickle
 from keras.models import load_model
+
+
 W = 575
 H = 525
-dy = 5 # pixels
-dx = 5 # pixels
+dy = 10 # pixels
+dx = 10 # pixels
 
 #need to add a timestamp to see how long it takes!
-WIDTH = 200
-HEIGHT = 200
+WIDTH = HEIGHT = 224
 LR = 1e-4
 EPOCHS_1 = 40
-EPOCHS_2 = 100
+EPOCHS_2 = 40
 DTYPE = 'body'
-OPTIMIZER = 'momentum'
-DATA_TYPE = 'rgb_200'
+OPTIMIZER = 'Adam'
+#DATA_TYPE = "rgb_{}".format(WIDTH)
+DATA_TYPE = "Unbalanced_rgb_299"
 ARCH = "VGG16"
-FILENUM = 232 # Get this automatically in the future
+#FILENUM = pickle.load(open("trainingData/rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
+FILENUM = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
+#FILENUM = 232
 
 MODEL_NAME = 'pytalos_{}_{}_{}_{}_files_{}_epocs_{}_{}.h5'.format(DTYPE, ARCH, OPTIMIZER, FILENUM, EPOCHS_1, DATA_TYPE,LR)
 model_path = "models/{}/{}".format(DTYPE,MODEL_NAME)
 
 print(model_path)
 model = load_model(model_path)
+model.load_weights("models/{}/best_weights_{}".format(DTYPE,MODEL_NAME))
 
 def forwards():
     SendKeyPress('w')

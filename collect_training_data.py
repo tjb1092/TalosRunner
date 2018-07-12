@@ -11,9 +11,8 @@ import pickle
 
 
 def keys_to_output(keys):
-    #output = [0,0,0,0]
-    output = [0,0,0,0, 0] # a, d, w, s, nothing
-
+    output = [0,0,0,0,0] # a, d, w, s, nothing
+    #print(keys)
     if 'a' in keys:
         output[0] = 1
     elif 'd' in keys:
@@ -25,16 +24,17 @@ def keys_to_output(keys):
     elif len(keys) == 0:
         output[4] = 1
 
+    print(output)
     return output
 
 def mmove_to_output(root, prevX, prevY):
-    #output = [0,0,0,0]
     output = [0,0,0,0,0] #up, down, left, right, nothing
-    thresh = 5
+    thresh = 1
     mouse_x, mouse_y = getMousePos(root)
     dx = prevX - mouse_x
     dy = prevY - mouse_y
-    #print("{}, {}".format(dx, dy))
+
+    #print("({}, {}):({}, {})".format(prevX, prevY, dx, dy))
     if dy > thresh: #up
         output[0] = 1
     elif (-1.*dy) > thresh: #down
@@ -98,9 +98,8 @@ def main():
     pickle_fname = "collectedData/dataIndex.p"
     dataIndex = open_dataIndex(pickle_fname)
 
-    # I have a very strong suspicion that this repeats the latest data file now.
-    training_data_body = open_npy_file(dataIndex, "body")
-    training_data_head = open_npy_file(dataIndex, "head")
+    training_data_body = []
+    training_data_head = []
 
     countDown(5)
 
@@ -131,7 +130,7 @@ def main():
         print('loop took {:0.3f} seconds'.format(time.time()-last_time))
         last_time = time.time()
         keysPressed = [] # refresh it each time we loop to keep out past inputs
-        cv2.imshow('window',image)
+        #cv2.imshow('window',image)
         time.sleep(0.01)  # Needs to be there for the async hook and this synced loop to keep up with each other
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()

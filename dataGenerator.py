@@ -1,14 +1,15 @@
 import keras
 import numpy as np
-
+import cv2
 # Modified from:
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly.html
 #Had to conform with my pre-balance data approach I'm taking thus far.
 class DataGenerator(keras.utils.Sequence):
     #Generates data for Keras
-    #This needs to be able to dynamically adapt to different data sizes and pull from the right files
-    def __init__(self, list_IDs, DTYPE, DATA_TYPE, batch_size=1, shuffle=True):
+    def __init__(self, list_IDs, WIDTH, HEIGHT, DTYPE, DATA_TYPE, batch_size=1, shuffle=True):
 
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
         self.DTYPE = DTYPE
         self.DATA_TYPE = DATA_TYPE
         self.batch_size = batch_size
@@ -42,7 +43,7 @@ class DataGenerator(keras.utils.Sequence):
     def __data_generation(self, ID):
 
         tmp = np.load('trainingData/{}/{}/data_{}.npy'.format(self.DATA_TYPE, self.DTYPE, ID))
-        X= np.array([i[0] for i in tmp]).reshape(-1,200,200,3)
+        X= np.array([cv2.resize(i[0],(self.WIDTH,self.HEIGHT)) for i in tmp]).reshape(-1,self.WIDTH,self.HEIGHT,3)
         y = np.array([i[1] for i in tmp])
 
         return X, y

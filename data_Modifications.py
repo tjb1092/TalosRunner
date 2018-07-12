@@ -34,16 +34,17 @@ def delete_data_file():
 """
 I want the option to look at data files to see if they are "good". There were a
 couple of times I really messed up the puzzle, so they shouldn't really be in the
-training data
+training da04
 """
 
 def view_data():
     dataIndex = pickle.load(open("collectedData/dataIndex.p","rb"))
-    selectedFile = input("Pick a DF number from 1 to 231: ")
-    data_type = input("body or head?\n")
+    #selectedFile = input("Pick a DF number from 1 to 231: ")
+    #data_type = input("body or head?\n")
     #d = input("which d?")
-
-    fname = "trainingData/gray_100/{}/data_{}.npy".format(data_type, selectedFile)
+    selectedFile =416
+    data_type = "head"
+    fname = "collectedData/{}/training_data_{}_{}.npy".format(data_type, data_type, selectedFile)
     viewData(fname)
 
 
