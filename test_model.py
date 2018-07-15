@@ -13,13 +13,13 @@ from keras.models import load_model
 
 W = 575
 H = 525
-dy = 10 # pixels
-dx = 10 # pixels
+dy = 4 # pixels
+dx = 4 # pixels
 
 #need to add a timestamp to see how long it takes!
 WIDTH = HEIGHT = 224
 LR = 1e-4
-EPOCHS_1 = 40
+EPOCHS_1 = 4
 EPOCHS_2 = 40
 DTYPE = 'body'
 OPTIMIZER = 'Adam'
@@ -28,7 +28,6 @@ DATA_TYPE = "Unbalanced_rgb_299"
 ARCH = "VGG16"
 #FILENUM = pickle.load(open("trainingData/rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
 FILENUM = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
-#FILENUM = 232
 
 MODEL_NAME = 'pytalos_{}_{}_{}_{}_files_{}_epocs_{}_{}.h5'.format(DTYPE, ARCH, OPTIMIZER, FILENUM, EPOCHS_1, DATA_TYPE,LR)
 model_path = "models/{}/{}".format(DTYPE,MODEL_NAME)

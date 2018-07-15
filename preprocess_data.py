@@ -168,23 +168,26 @@ def sort_Data_Labels(data):
 def createUnbalancedTrainingData(Dtype):
     # Iterate through each motion for each file and construct the data
     # Smallest defines how many files we can have
+    LastIndex = pickle.load(open("trainingData/Unbalanced_rgb_299/lastDataIndex_{}.p".format(Dtype), "rb"))
     dataIndex = pickle.load(open("collectedData/dataIndex.p", "rb")) # Get current trainingData data file number
-    counter = 0
-    for i in range(dataIndex):
+    trainingIndex = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(Dtype), "rb"))
+
+    for i in range(LastIndex, dataIndex):
         data = list(np.load("collectedData/{}/training_data_{}_{}.npy".format(Dtype, Dtype, str(i+1)))) # load a data file.
         shuffle(data)
 
         # Cuts into 5 parts of 100 samples
         for i in range(5):
             tmp = data[i*100:((i+1)*100)]
-            print(len(tmp))
-            counter += 1
-            np.save("trainingData/Unbalanced_rgb_299/{}/data_{}.npy".format(Dtype,str(counter)), tmp)
+            print(trainingIndex)
+            trainingIndex += 1
+            np.save("trainingData/Unbalanced_rgb_299/{}/data_{}.npy".format(Dtype,str(trainingIndex)), tmp)
 
-    pickle.dump(counter,open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(Dtype), "wb")) # Save final number
+    pickle.dump(dataIndex,open("trainingData/Unbalanced_rgb_299/lastDataIndex_{}.p".format(Dtype), "wb")) # Update index
+    pickle.dump(trainingIndex,open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(Dtype), "wb")) # Save final number
 
 
 # Maybe these could be in a main function that allows me to choose? Is it worth it?
 #prepare_Data('collectedData', 'body')
 #prepare_Data('collectedData', 'head')
-#createUnbalancedTrainingData('body')
+createUnbalancedTrainingData('body')

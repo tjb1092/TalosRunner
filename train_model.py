@@ -22,7 +22,7 @@ OPTIMIZER = 'Adam'
 DATA_TYPE = 'Unbalanced_rgb_299'
 ARCH = "VGG16"
 FILENUM = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
-#FILENUM = pickle.load(open("trainingData/rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
+##FILENUM = pickle.load(open("trainingData/rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
 isFineTuning = True
 
 # Picks variable length train/validation sets. Also shuffles indicies

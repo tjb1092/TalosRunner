@@ -42,9 +42,9 @@ def view_data():
     #selectedFile = input("Pick a DF number from 1 to 231: ")
     #data_type = input("body or head?\n")
     #d = input("which d?")
-    selectedFile =416
-    data_type = "head"
-    fname = "collectedData/{}/training_data_{}_{}.npy".format(data_type, data_type, selectedFile)
+    selectedFile =3479
+    data_type = "body"
+    fname = "trainingData/Unbalanced_rgb_299/{}/data_{}.npy".format(data_type, selectedFile)
     viewData(fname)
 
 

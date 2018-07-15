@@ -35,6 +35,7 @@ def mmove_to_output(root, prevX, prevY):
     dy = prevY - mouse_y
 
     #print("({}, {}):({}, {})".format(prevX, prevY, dx, dy))
+    #Fuck me I think I was backwards lol
     if dy > thresh: #up
         output[0] = 1
     elif (-1.*dy) > thresh: #down
