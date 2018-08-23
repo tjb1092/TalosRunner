@@ -4,8 +4,6 @@ import os
 import cv2
 from utils import viewData
 
-
-
 def delete_data_file():
     # Remove file and re-adjust the file numbers
     file_number = input("enter the file number you wish to delete: ")

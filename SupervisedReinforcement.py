@@ -1,5 +1,4 @@
-import os
-import glob
+# General Modules
 import pickle
 import shutil
 import subprocess
@@ -8,15 +7,15 @@ import time
 from random import shuffle
 import numpy as np
 from Xlib import display, X
-
+# Keras Modules
 import keras
 from keras import backend as K
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.optimizers import Adam, SGD
 from keras.models import load_model
-from screenGrab import grabscreen
-
+# My Modules
 import pyxhook
+from screenGrab import grabscreen
 from utils import countDown, move_body, move_head, get_Keras_model
 from dataGenerator import DataGenerator
 
@@ -25,7 +24,6 @@ def SupervisorCheck(Image, body_moves, head_moves, trainingData):
     global keysPressed
 
     noop = [0,0,0,0,1]
-    #saveTraining = False
     noop_b = noop_h = False
     if 'shift_r' in keysPressed:
         noop_b = True
@@ -45,7 +43,6 @@ def SupervisorCheck(Image, body_moves, head_moves, trainingData):
             output_body = supervised_body #else, use the supervisor's decision.
 
     if supervised_head == noop and not noop_h:
-        #If the supervisor isn't doing anything, proceed with agent's choice.
         output_head = head_moves
     else:
         if noop_h:
@@ -59,7 +56,6 @@ def SupervisorCheck(Image, body_moves, head_moves, trainingData):
     trainingData.append([Image,output_body,output_head])
 
     return trainingData
-
 
 def sb_keys_to_output(keys):
     # agent:    a, d, w, s, nothing
@@ -77,7 +73,7 @@ def sb_keys_to_output(keys):
     else:
         output[4] = 1
 
-    print("Supervised Body:")
+    print("Supervisor:")
     print(output)
     return output
 
@@ -85,7 +81,6 @@ def sh_keys_to_output(keys):
     # agent:    j, l, i, k, nothing.
     # me:       p_left, p_right, p_up, p_begin, nothing
     output = [0,0,0,0,0]
-    #print(keys)
     if 'p_left' in keys:
         output[0] = 1
     elif 'p_right' in keys:
@@ -96,7 +91,7 @@ def sh_keys_to_output(keys):
         output[3] = 1
     else:
         output[4] = 1
-    print("Supervised Head:")
+
     print(output)
     return output
 
@@ -124,17 +119,20 @@ def OnKeyRelease(event):
 
 
 def main():
-    ############################
+    ########################################################
     # Initialize
+    ########################################################
     global keysPressed
+    dataIndex = 0
+
     EpisodicMemCap = 100
     dataIndex_episode = pickle.load(open("trainingData/episodeData/dataIndex_episode.p", "rb"))
 
     # Load model
-    WIDTH = HEIGHT = 224 # I don't like how split up this is and I'll have to think of a better way.
-    FILENUM_both = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format('both'), "rb"))
+    WIDTH = HEIGHT = 224
+    FILENUM = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format('both'), "rb"))
     #FILENUM_both = 458
-    model = get_Keras_model('both', WIDTH, HEIGHT, 8, "AdamReg", FILENUM_both)
+    model = get_Keras_model('both', WIDTH, HEIGHT, 8, "AdamReg", FILENUM)
 
     # Setup for screenGrab
     last_time = time.time()
@@ -144,24 +142,29 @@ def main():
     root = dsp.screen().root
 
     countDown(5)
-    dataIndex = 0
-    cnter = 0
+
     while True:
+        ########################################################
         #Reinforcement Loop
+        ########################################################
+
         isSolved = False
         trainingData = []
 
-
         while not isSolved:
-            #During the puzzle, this loop will play till it gets determined that the puzzle has been solved.
-
+            """
+            During the puzzle, this loop will play till it gets determined that
+            the puzzle has been solved.
+            """
             ############################
-            #Get Image
+            # Get Image
+            ############################
             image = grabscreen(root, W, H)
             image_rs = cv2.resize(image,(WIDTH, HEIGHT))
 
             ############################
-            #Make Predictions
+            # Make Predictions
+            ############################
             body_moves = [0, 0, 0, 0, 0]
             head_moves = [0, 0, 0, 0, 0]
             p_body, p_head = model.predict([image_rs.reshape(1, WIDTH, HEIGHT, 3)])
@@ -172,35 +175,23 @@ def main():
             body_moves[body_m_index] = 1
             head_moves[head_m_index] = 1
 
-            #body_moves = list(np.around(p_body[0]).astype(int))
-            #head_moves = list(np.around(p_head[0]).astype(int))
-            if np.all(np.asarray(body_moves) == 0) or np.all(np.asarray(head_moves) == 0):
-                cnter += 1
             print(body_moves)
             print(head_moves)
-            print("Corrupted Predictions: {}".format(cnter))
+
             ############################
-            #See if Supervisor overrides
+            # See if Supervisor overrides
+            ############################
             trainingData = SupervisorCheck(cv2.resize(image,(299,299)), body_moves, head_moves, trainingData)
 
             print('loop took {:0.3f} seconds'.format(time.time()-last_time))
             last_time = time.time()
 
-            #Store episodic memory to file. Sets of 100 so I don't need to preprocess.
+            ############################
+            # Store episodic memory to file.
+            ############################
             if len(trainingData) == 100:
-
+                # Sets of 100 so I don't need to preprocess.
                 print(dataIndex)
-                """
-                for k in range(dataIndex*100):
-                    cv2.imshow('test',trainingData[k][0])
-                    print("predictions (body/head):")
-                    print(trainingData[k][1])
-                    print(trainingData[k][2])
-                    if cv2.waitKey(25) & 0xFF == ord('q'):
-                        cv2.destroyAllWindows()
-                        break
-                    input("pause")
-                """
                 shuffle(trainingData) # Just randomize it now.
                 dataIndex += 1
 
@@ -215,7 +206,12 @@ def main():
                 # My manual way to break the loop
                 isSolved = True
 
-            time.sleep(0.01)  # Needs to be there for the async hook and this synced loop to keep up with each other
+            """
+            Needs to be there for the async hook and this synced loop
+            to keep up with each other
+            """
+            time.sleep(0.01)
+
             if cv2.waitKey(25) & 0xFF == ord('q'):
                 cv2.destroyAllWindows()
                 break
@@ -227,25 +223,25 @@ def main():
         move_head([0,0,0,0,1])
 
         if dataIndex > EpisodicMemCap:
-
+            ########################################################
+            # Retrain the Agent's Policy
+            ########################################################
 
             for i, layer in enumerate(model.layers):
                 print(i,layer.name)
-            #input("pause: I need to update dis once")
 
-
-            Layer_End = 19 # Only train the last dense layers that I personally added.
+            # Only train the last dense layers that I personally added to VGG16.
+            Layer_End = 19
             for layer in model.layers[:Layer_End]:
                 layer.trainable = False
             for layer in model.layers[Layer_End:]:
                 layer.trainable = True
 
-            ############################
-            # Update the Policy
+            # Training Setup
             EPOCHS = 4
             DTYPE = DATA_TYPE = 'episodeData'
 
-            TrainLen = dataIndex - 5
+            TrainLen = dataIndex - 10
             Indicies = np.array(range(1, dataIndex+1))
             shuffle(Indicies)
             TrainIndex = Indicies[:TrainLen]

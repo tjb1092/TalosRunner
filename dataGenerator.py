@@ -48,7 +48,6 @@ class DataGenerator(keras.utils.Sequence):
         if self.isConcat:
             y1 = np.array([i[1] for i in tmp])
             y2 = np.array([i[2] for i in tmp])
-            #y = np.concatenate((y1,y2), axis=1)
             y = [y1, y2]
         else:
             y = np.array([i[1] for i in tmp])

@@ -2,13 +2,9 @@ import numpy as np
 from screenGrab import grabscreen
 import cv2
 import time
-import os
 from Xlib import display, X
 import pyxhook
-import math
 from utils import countDown, save_npy_file, open_dataIndex
-#from keylogging import OnKeyPress, OnKeyRelease
-import pickle
 
 
 def b_keys_to_output(keys):
@@ -28,7 +24,6 @@ def b_keys_to_output(keys):
     print("Body:")
     print(output)
     return output
-
 
 def h_keys_to_output(keys):
     output = [0,0,0,0,0] # j, l, i, k, nothing.

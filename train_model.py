@@ -4,7 +4,7 @@ from keras.models import Model
 from keras.layers import Dense, GlobalAveragePooling2D, concatenate
 from keras import backend as K
 from keras.models import Sequential
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 from keras import regularizers
 from keras.callbacks import ModelCheckpoint, TensorBoard
 import keras
@@ -44,7 +44,6 @@ training_generator = DataGenerator(TrainIndex, **params)
 validation_generator = DataGenerator(ValidIndex, **params)
 
 # Define the model w/ Keras from their documentation on applications
-#base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(299,299,3))
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(WIDTH,HEIGHT,3))
 
 # Add a global spatial average pooling layer
@@ -53,35 +52,24 @@ x = GlobalAveragePooling2D()(x)
 # Add two fully connected layers
 
 x = Dense(1024, activation='relu', kernel_regularizer=regularizers.l2(0.01))(x)
-#x = Dense(1024, activation='relu')(x)
-"""
-# and a logistic layer -- let's say we have 5 classes
-predictions = Dense(5, activation='softmax')(x)
-"""
 
+# Branch out to both modalities, body and head movement.
 x1 = Dense(1024, activation='relu')(x)
 x2 = Dense(1024, activation='relu')(x)
 p_body = Dense(5, activation='softmax')(x1)
 p_head = Dense(5, activation='softmax')(x2)
 
-#predictions = concatenate([p_body,p_head])
-
 #First: train only the top layers (which were randomly initialized)
-#i.e. freeze all conv. InceptionV3 layers
-
 for layer in base_model.layers:
     layer.trainable = False
 
-
 #This is the model we will train
 model = Model(inputs=base_model.input, outputs = [p_body,p_head])
-
 
 # Defining my callbacks:
 filepath="models/{}/best_weights_{}".format(DTYPE,MODEL_NAME)
 checkpoint = ModelCheckpoint(filepath, monitor='val_dense_5_acc', verbose=1, save_best_only=True, mode='max')
 callbacks_list = [checkpoint]
-
 
 # compile the model (should be done *after* setting layers to non-trainable)
 model.compile(optimizer=Adam(lr=0.0001), loss='categorical_crossentropy', metrics=['acc'])
@@ -93,23 +81,22 @@ model.fit_generator(generator=training_generator,
                     use_multiprocessing=True,
                     workers=6, epochs = EPOCHS_1, steps_per_epoch=TrainLen)
 
-# Future thing: Reload the best weights to continue fine-tuning. It just makes more sense that way.
 #Reload the best weights from that update session
 model.load_weights(filepath)
 
 print("Saving Model!")
 model.save(model_path)
 
-
 if isFineTuning:
-    # At this point, the top layers are well trained and we can start fine-tuning conv. layers from VGG16.
+    # At this point, the top layers are well trained and we can start
+    # fine-tuning conv. layers from VGG16.
     # Freeze the bottom N layers and train the remaining top layers
 
     # Let's visualize layer names and layer indicies to see how many layers we should freeze:
     for i, layer in enumerate(base_model.layers):
         print(i,layer.name)
 
-    #Choosing to train the top 2 Conv blocks. i.e. freeze the first 8 layers and unfreeze the rest:
+    #Choosing to train the top 2 Conv blocks.
     Layer_End = 7
     for layer in model.layers[:Layer_End]:
         layer.trainable = False
@@ -118,8 +105,9 @@ if isFineTuning:
 
     # Recompile the model for these modifications to take effect
     # Using SGD with a low learning rate.
-    from keras.optimizers import SGD
-    model.compile(optimizer=SGD(lr=LR, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=SGD(lr=LR, momentum=0.9),
+                    loss='categorical_crossentropy',
+                    metrics=['accuracy'])
 
     # Train the model again (this time fine-tuning the top 2 inception blocks and the Dense layers)
     model.fit_generator(generator=training_generator,
@@ -130,6 +118,5 @@ if isFineTuning:
 
     print("Saving Model!")
     model.save(model_path)
-
 
 # tensorboard --logdir=~/store2/Code/TalosRunner/log
