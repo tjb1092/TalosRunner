@@ -1,10 +1,11 @@
 #from keras.applications.inception_v3 import InceptionV3
 from keras.applications.vgg16 import VGG16
 from keras.models import Model
-from keras.layers import Dense, GlobalAveragePooling2D
+from keras.layers import Dense, GlobalAveragePooling2D, concatenate
 from keras import backend as K
 from keras.models import Sequential
 from keras.optimizers import Adam
+from keras import regularizers
 from keras.callbacks import ModelCheckpoint, TensorBoard
 import keras
 import numpy as np
@@ -15,14 +16,14 @@ import pickle
 #need to add a timestamp to see how long it takes!
 WIDTH = HEIGHT = 224
 LR = 1e-4
-EPOCHS_1 = 4
-EPOCHS_2 = 100
-DTYPE = 'body'
-OPTIMIZER = 'Adam'
+EPOCHS_1 = 10
+EPOCHS_2 = 50
+DTYPE = 'both'
+OPTIMIZER = 'AdamReg_Jesus'
 DATA_TYPE = 'Unbalanced_rgb_299'
 ARCH = "VGG16"
-FILENUM = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
-##FILENUM = pickle.load(open("trainingData/rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
+FILENUM = 608
+#FILENUM = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
 isFineTuning = True
 
 # Picks variable length train/validation sets. Also shuffles indicies
@@ -34,7 +35,7 @@ TrainIndex = Indicies[:TrainLen]
 ValidIndex = Indicies[TrainLen:]
 
 
-params = {'WIDTH': WIDTH, 'HEIGHT': HEIGHT, 'DTYPE': DTYPE, 'DATA_TYPE': DATA_TYPE, 'batch_size': 1, 'shuffle': True}
+params = {'WIDTH': WIDTH, 'HEIGHT': HEIGHT, 'DTYPE': DTYPE, 'DATA_TYPE': DATA_TYPE, 'isConcat': True, 'batch_size': 1, 'shuffle': True}
 
 MODEL_NAME = 'pytalos_{}_{}_{}_{}_files_{}_epocs_{}_{}.h5'.format(DTYPE, ARCH, OPTIMIZER, FILENUM, EPOCHS_1, DATA_TYPE,LR)
 model_path = "models/{}/{}".format(DTYPE,MODEL_NAME)
@@ -49,14 +50,21 @@ base_model = VGG16(weights='imagenet', include_top=False, input_shape=(WIDTH,HEI
 # Add a global spatial average pooling layer
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
-# Add a fully connected layer
-x = Dense(1024, activation='relu')(x)
+# Add two fully connected layers
 
+x = Dense(1024, activation='relu', kernel_regularizer=regularizers.l2(0.01))(x)
+#x = Dense(1024, activation='relu')(x)
+"""
 # and a logistic layer -- let's say we have 5 classes
 predictions = Dense(5, activation='softmax')(x)
+"""
 
-#This is the model we will train
-model = Model(inputs=base_model.input, outputs = predictions)
+x1 = Dense(1024, activation='relu')(x)
+x2 = Dense(1024, activation='relu')(x)
+p_body = Dense(5, activation='softmax')(x1)
+p_head = Dense(5, activation='softmax')(x2)
+
+#predictions = concatenate([p_body,p_head])
 
 #First: train only the top layers (which were randomly initialized)
 #i.e. freeze all conv. InceptionV3 layers
@@ -64,9 +72,14 @@ model = Model(inputs=base_model.input, outputs = predictions)
 for layer in base_model.layers:
     layer.trainable = False
 
+
+#This is the model we will train
+model = Model(inputs=base_model.input, outputs = [p_body,p_head])
+
+
 # Defining my callbacks:
 filepath="models/{}/best_weights_{}".format(DTYPE,MODEL_NAME)
-checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+checkpoint = ModelCheckpoint(filepath, monitor='val_dense_5_acc', verbose=1, save_best_only=True, mode='max')
 callbacks_list = [checkpoint]
 
 
@@ -79,6 +92,10 @@ model.fit_generator(generator=training_generator,
                     callbacks=callbacks_list,
                     use_multiprocessing=True,
                     workers=6, epochs = EPOCHS_1, steps_per_epoch=TrainLen)
+
+# Future thing: Reload the best weights to continue fine-tuning. It just makes more sense that way.
+#Reload the best weights from that update session
+model.load_weights(filepath)
 
 print("Saving Model!")
 model.save(model_path)

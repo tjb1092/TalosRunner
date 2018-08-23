@@ -1,106 +1,42 @@
 import numpy as np
 import cv2
 import time
-from directInputs import SendKeyPress, SendKeyRelease
 from screenGrab import grabscreen
 import os
 from Xlib import display, X
-from utils import countDown
+from utils import countDown, move_body, move_head, get_Keras_model
 import uinput
 import pickle
 from keras.models import load_model
 
 
-W = 575
-H = 525
-dy = 4 # pixels
-dx = 4 # pixels
+# Mode == 1, Body only.
+# Mode == 2, Body + Head
+# Mode == 3, Both
+mode = 3
+isblur = False
 
-#need to add a timestamp to see how long it takes!
-WIDTH = HEIGHT = 224
-LR = 1e-4
-EPOCHS_1 = 4
-EPOCHS_2 = 40
-DTYPE = 'body'
-OPTIMIZER = 'Adam'
-#DATA_TYPE = "rgb_{}".format(WIDTH)
-DATA_TYPE = "Unbalanced_rgb_299"
-ARCH = "VGG16"
-#FILENUM = pickle.load(open("trainingData/rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
-FILENUM = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(DTYPE), "rb"))
+# Load model
+WIDTH = HEIGHT = 224 # I don't like how split up this is and I'll have to think of a better way.
+FILENUM_body = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format('body'), "rb"))
+FILENUM_head = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format('head'), "rb"))
+FILENUM_both = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format('both'), "rb"))
 
-MODEL_NAME = 'pytalos_{}_{}_{}_{}_files_{}_epocs_{}_{}.h5'.format(DTYPE, ARCH, OPTIMIZER, FILENUM, EPOCHS_1, DATA_TYPE,LR)
-model_path = "models/{}/{}".format(DTYPE,MODEL_NAME)
+if mode == 3:
+    model = get_Keras_model('both', WIDTH, HEIGHT, 10, "AdamReg_Jesus", 608)
+else:
+    model_body = get_Keras_model('body', WIDTH, HEIGHT, 4, "Adam", FILENUM_body)
+    if mode == 2:
+        model_head = get_Keras_model('head', WIDTH, HEIGHT, 11, "AdamReg", FILENUM_head)
 
-print(model_path)
-model = load_model(model_path)
-model.load_weights("models/{}/best_weights_{}".format(DTYPE,MODEL_NAME))
 
-def forwards():
-    SendKeyPress('w')
-    SendKeyRelease('s')
-    SendKeyRelease('a')
-    SendKeyRelease('d')
 
-def backwards():
-    SendKeyPress('s')
-    SendKeyRelease('w')
-    SendKeyRelease('a')
-    SendKeyRelease('d')
-
-def left():
-    SendKeyPress('a')
-    SendKeyRelease('s')
-    SendKeyRelease('w')
-    SendKeyRelease('d')
-
-def right():
-    SendKeyPress('d')
-    SendKeyRelease('s')
-    SendKeyRelease('a')
-    SendKeyRelease('w')
-
-def stop():
-    SendKeyRelease('w')
-    SendKeyRelease('s')
-    SendKeyRelease('a')
-    SendKeyRelease('d')
-
-#Terrible I know, but whatever
-def getMousePos(root):
-    mouse_x = root.query_pointer()._data["root_x"]
-    mouse_y = root.query_pointer()._data["root_y"]
-    return mouse_x, mouse_y
-
-#These can probably just be regular function calls in the main loop now. Maybe.
-#It does look more intuitive with the names attached
-
-def lookUp(d):
-    d.emit(uinput.REL_Y,-1*dy)
-
-def lookDown(d):
-    d.emit(uinput.REL_Y,dy)
-
-def lookLeft(d):
-    d.emit(uinput.REL_X,-1*dx)
-
-def lookRight(d):
-    d.emit(uinput.REL_X,dx)
-
-# Trying this out. It mimics what happens with the body function.
-# It seemed like before, it was either too jerky or not fluid enough.
-def look(d, direction):
-
-    if direction == 1:
-        d.emit(uinput.REL_Y,-1*dy)  # Up
-    elif direction == 2:
-        d.emit(uinput.REL_Y,dy)     # Down
-    elif direction == 3:
-        d.emit(uinput.REL_X,-1*dx)  # Left
-    elif direction == 4:
-        d.emit(uinput.REL_X,dx)     # Right
-    # 5 will make nothing happen.
-
+def blurImage(Imqueue):
+    blurredImage = np.round(0.2*Imqueue[4]+0.2*Imqueue[3]+
+                    0.2*Imqueue[2]+0.2*Imqueue[1]+
+                    0.2*Imqueue[0]).astype('uint8')
+    return blurredImage
+    
 
 def main():
 
@@ -112,65 +48,59 @@ def main():
     screen = dsp.screen()
     root = dsp.screen().root
 
-    # This was such an obscure way to to this. X11 doesn't force the mouse in the game window
-    # This device object does work, so that's nice that it works
-    device = uinput.Device([
-        uinput.BTN_LEFT,
-        uinput.BTN_RIGHT,
-        uinput.REL_X,
-        uinput.REL_Y,
-        ])
-
-    choice = 5 #start not moving head
+    if isblur:
+        cnt = 0
+        Imqueue = []
 
     while True:
 
         image = grabscreen(root, W,H)
         # These need to be put into a conditional for the different types?
         image = cv2.resize(image,(WIDTH,HEIGHT))
-        #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        prediction = model.predict([image.reshape(1,WIDTH,HEIGHT,3)])[0]
 
-        print(prediction)
-        moves = list(np.around(prediction))
-        print(moves)
+        if mode == 3:
+            #Make Predictions
+            body_moves = [0, 0, 0, 0, 0]
+            head_moves = [0, 0, 0, 0, 0]
+            p_body, p_head = model.predict([image.reshape(1, WIDTH, HEIGHT, 3)])
+            # This method ensures that each frame, the agent will pick the most likely option.
+            body_m_index = np.argmax(p_body[0])
+            head_m_index = np.argmax(p_head[0])
+            body_moves[body_m_index] = 1
+            head_moves[head_m_index] = 1
 
-        if moves == [1,0,0,0,0]:
-            if DTYPE == 'body':
-                left()
-            elif DTYPE == 'head':
-                choice = 1
-                #lookUp(device)
-        elif moves == [0,1,0,0,0]:
-            if DTYPE == 'body':
-                right()
-            elif DTYPE == 'head':
-                choice = 2
-                #lookDown(device)
-        elif moves == [0,0,1,0,0]:
-            if DTYPE == 'body':
-                forwards()
-            elif DTYPE == 'head':
-                choice = 3
-                #lookLeft(device)
-        elif moves == [0,0,0,1,0]:
-            if DTYPE == 'body':
-                backwards()
-            elif DTYPE == 'head':
-                choice = 4
-                #lookRight(device)
-        elif moves == [0,0,0,0,1]:
-            if DTYPE == 'body':
-                stop()
-                #time.sleep(0.5) #Take a break
-            elif DTYPE == 'head':
-                choice = 5
+            move_body(body_moves)
+            move_head(head_moves)
 
-        if DTYPE == 'head':
-            look(device, choice)
+        else:
+            prediction_body = model_body.predict([image.reshape(1,WIDTH,HEIGHT,3)])[0]
+            moves_body = list(np.around(prediction_body))
+            move_body(moves_body)
+            print(moves_body)
+
+            if mode == 2:
+
+                if isblur:
+                    if cnt < 5:
+                        Imqueue.append(image)
+                        cnt += 1
+                    else:
+                        #Keep a queue to cache the last 5 images.
+                        Imqueue.reverse()
+                        Imqueue.pop()
+                        Imqueue.reverse()
+                        Imqueue.append(image)
+                        image = blurImage(Imqueue)
+                        #print(len(Imqueue))
+                        cv2.imshow('test', image)
+
+                prediction_head = model_head.predict([image.reshape(1,WIDTH,HEIGHT,3)])[0]
+                moves_head = list(np.around(prediction_head))
+                move_head(moves_head)
+                print(moves_head)
+
         print('loop took {:0.3f} seconds'.format(time.time()-last_time))
         last_time = time.time()
-        keysPressed = [] # refresh it each time we loop to keep out past inputs
 
         time.sleep(0.01)  # Needs to be there for the async hook and this synced loop to keep up with each other
         if cv2.waitKey(25) & 0xFF == ord('q'):

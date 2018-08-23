@@ -38,15 +38,21 @@ training da04
 """
 
 def view_data():
-    dataIndex = pickle.load(open("collectedData/dataIndex.p","rb"))
+    #dataIndex = pickle.load(open("collectedData/dataIndex.p","rb"))
     #selectedFile = input("Pick a DF number from 1 to 231: ")
     #data_type = input("body or head?\n")
     #d = input("which d?")
-    selectedFile =3479
-    data_type = "body"
-    fname = "trainingData/Unbalanced_rgb_299/{}/data_{}.npy".format(data_type, selectedFile)
-    viewData(fname)
-
+    data_type = "both"
+    cnter = 0
+    for selectedFile in range(1,102):
+        print(selectedFile)
+        #fname = "trainingData/Unbalanced_rgb_299/{}/data_{}.npy".format(data_type, selectedFile)
+        fname = "trainingData/episodeData/episodeDataArchived/E1/data_{}.npy".format(selectedFile)
+        #fname = "collectedData/both/training_data_both_{}.npy".format(selectedFile)
+        temp = viewData(fname)
+        cnter = cnter + temp
+        #print(cnter)
+    print("total bad entries: {}".format(cnter))
 
 
 

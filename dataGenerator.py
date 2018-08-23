@@ -6,7 +6,7 @@ import cv2
 #Had to conform with my pre-balance data approach I'm taking thus far.
 class DataGenerator(keras.utils.Sequence):
     #Generates data for Keras
-    def __init__(self, list_IDs, WIDTH, HEIGHT, DTYPE, DATA_TYPE, batch_size=1, shuffle=True):
+    def __init__(self, list_IDs, WIDTH, HEIGHT, DTYPE, DATA_TYPE, isConcat, batch_size=1, shuffle=True):
 
         self.WIDTH = WIDTH
         self.HEIGHT = HEIGHT
@@ -14,6 +14,7 @@ class DataGenerator(keras.utils.Sequence):
         self.DATA_TYPE = DATA_TYPE
         self.batch_size = batch_size
         self.list_IDs = list_IDs
+        self.isConcat = isConcat
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -44,6 +45,12 @@ class DataGenerator(keras.utils.Sequence):
 
         tmp = np.load('trainingData/{}/{}/data_{}.npy'.format(self.DATA_TYPE, self.DTYPE, ID))
         X= np.array([cv2.resize(i[0],(self.WIDTH,self.HEIGHT)) for i in tmp]).reshape(-1,self.WIDTH,self.HEIGHT,3)
-        y = np.array([i[1] for i in tmp])
+        if self.isConcat:
+            y1 = np.array([i[1] for i in tmp])
+            y2 = np.array([i[2] for i in tmp])
+            #y = np.concatenate((y1,y2), axis=1)
+            y = [y1, y2]
+        else:
+            y = np.array([i[1] for i in tmp])
 
         return X, y

@@ -165,20 +165,27 @@ def sort_Data_Labels(data):
 
     return d1, d2, d3, d4, d5
 
-def createUnbalancedTrainingData(Dtype):
+def createUnbalancedTrainingData(Dtype, isblur):
     # Iterate through each motion for each file and construct the data
     # Smallest defines how many files we can have
     LastIndex = pickle.load(open("trainingData/Unbalanced_rgb_299/lastDataIndex_{}.p".format(Dtype), "rb"))
-    dataIndex = pickle.load(open("collectedData/dataIndex.p", "rb")) # Get current trainingData data file number
+    dataIndex = pickle.load(open("collectedData/dataIndex_{}.p".format(Dtype), "rb")) # Get current trainingData data file number
     trainingIndex = pickle.load(open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(Dtype), "rb"))
+
+    if isblur:
+        chunkIndex = 99
+    else:
+        chunkIndex = 100
 
     for i in range(LastIndex, dataIndex):
         data = list(np.load("collectedData/{}/training_data_{}_{}.npy".format(Dtype, Dtype, str(i+1)))) # load a data file.
+        if isblur:
+            data = blurData(data)
         shuffle(data)
 
         # Cuts into 5 parts of 100 samples
         for i in range(5):
-            tmp = data[i*100:((i+1)*100)]
+            tmp = data[i*chunkIndex:((i+1)*chunkIndex)]
             print(trainingIndex)
             trainingIndex += 1
             np.save("trainingData/Unbalanced_rgb_299/{}/data_{}.npy".format(Dtype,str(trainingIndex)), tmp)
@@ -186,8 +193,15 @@ def createUnbalancedTrainingData(Dtype):
     pickle.dump(dataIndex,open("trainingData/Unbalanced_rgb_299/lastDataIndex_{}.p".format(Dtype), "wb")) # Update index
     pickle.dump(trainingIndex,open("trainingData/Unbalanced_rgb_299/dataIndex_{}.p".format(Dtype), "wb")) # Save final number
 
+def blurData(data):
+    blurredData = []
+    for i in range(4,len(data)-1):
+        D = np.round(0.2*data[i][0]+0.2*data[i-1][0]+0.2*data[i-2][0]+0.2*data[i-3][0]+0.2*data[i-4][0]).astype('uint8')
+        blurredData.append([D,data[i][1]]) # Preceeding 5 frames and present frame's prediction.
+    #print(len(blurredData))
+    return blurredData
 
 # Maybe these could be in a main function that allows me to choose? Is it worth it?
 #prepare_Data('collectedData', 'body')
 #prepare_Data('collectedData', 'head')
-createUnbalancedTrainingData('body')
+createUnbalancedTrainingData('both',False)
